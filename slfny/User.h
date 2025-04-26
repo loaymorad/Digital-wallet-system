@@ -7,30 +7,27 @@ class User {
 public: 
     string username;
     string password;
-    double balance;
+    double balance = 0.0;
     vector<Transaction> transactions;
-    bool isSuspended;
+    bool isSuspended = false;
 
     User();
     User(string username, string password);
+    User(string username, string password, double balance, bool isSuspended);
+    
 
-    void registerUser();
 
-    void loginUser();
-
+    // Authentication
+    User registerUser();
+    User loginUser();
     void logoutUser();
 
+    // Features
     double viewBalance();
-
     bool sendMoney(const string& to, double amount);
-
     bool requestMoney(const string& from, double amount);
-    
-    void   viewTransactionHistory(); // using database
-
-    void   editProfile(); // username email password
-
-
+    void viewTransactionHistory();
+    void editProfile();
     ~User();
 };
 

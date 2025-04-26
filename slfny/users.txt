@@ -1,0 +1,3 @@
+loay,123,0,0
+morad,123,0,0
+ziad,morad,500,0
