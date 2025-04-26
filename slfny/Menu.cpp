@@ -92,47 +92,9 @@ void Menu::userMenu(User& currentUser) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void Menu::adminMenu(){
 
 
 
 };
+
