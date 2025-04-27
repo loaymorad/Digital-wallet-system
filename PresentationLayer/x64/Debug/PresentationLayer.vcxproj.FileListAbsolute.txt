@@ -1,0 +1,4 @@
+C:\Users\Ahmed Alian\source\repos\slfny---cs-project\PresentationLayer\x64\Debug\PresentationLayer.vcxproj.AssemblyReference.cache
+C:\Users\Ahmed Alian\source\repos\slfny---cs-project\PresentationLayer\x64\Debug\PresentationLayer.frmRegister.resources
+C:\Users\Ahmed Alian\source\repos\slfny---cs-project\PresentationLayer\x64\Debug\PresentationLayer.frmSignIn.resources
+C:\Users\Ahmed Alian\source\repos\slfny---cs-project\PresentationLayer\x64\Debug\PresentationLayer.vcxproj.GenerateResource.cache
