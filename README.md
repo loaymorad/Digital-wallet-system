@@ -1,4 +1,4 @@
-# 💳 Digital Wallet System (C++)
+# Digital Wallet System (C++)
 
 A **console-based digital wallet system** implemented in C++.  
 This project simulates a simple wallet where users can **register, log in, send/request money, and view transaction history**.  
@@ -7,7 +7,7 @@ All data is **persistent** using file storage (`users.txt`, `transactions.txt`).
 
 ---
 
-## 📌 Features
+## Features
 
 ### 👤 Users
 - Register and Login  
@@ -17,14 +17,14 @@ All data is **persistent** using file storage (`users.txt`, `transactions.txt`).
 - View transaction history (using **stack**)  
 - Edit profile (change password)  
 
-### 👨‍💻 Admins
+### Admins
 - Login with admin credentials  
 - View all registered users  
 - Suspend / Reactivate users  
 - Adjust user balances  
 - View all transactions  
 
-### 🗄️ Database
+### Database
 - Uses **file system storage** (`users.txt`, `transactions.txt`)  
 - Users stored with format:  `username$password$balance$suspended`
 - Transactions stored with format:  `sender$receiver$amount`
@@ -32,7 +32,7 @@ All data is **persistent** using file storage (`users.txt`, `transactions.txt`).
 
 ---
 
-## 🛠️ Technologies & Data Structures
+## Technologies & Data Structures
 
 - **Language**: C++  
 - **Core STL Containers**:
