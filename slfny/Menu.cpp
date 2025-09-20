@@ -1,100 +1,190 @@
 #include "Menu.h"
-#include "User.h"
+#include "Database.h"
 #include <iostream>
-#include <string>
-
 using namespace std;
 
-void Menu::mainMenu() { // For AUTH : assign current user to his data : redirct him to userMenu OR adminMenu
+static Database db;
+
+void Menu::mainMenu() {
     int choice;
-    User currentUser;
-
-    do {
-        cout << "== Main Menu ==" << endl;
-        cout << "   1. User Signup" << endl;
-        cout << "   2. User Login" << endl;
-        cout << "   3. Admin Login" << endl;
-        cout << "   4. Exit" << endl;
-        cout << "Enter your choice: ";
+    while (true) {
+        cout << "\n===== Digital Wallet System =====\n";
+        cout << "1. Register\n";
+        cout << "2. Login\n";
+        cout << "3. Admin Login\n";
+        cout << "4. Exit\n";
+        cout << "Enter choice: ";
         cin >> choice;
-        cin.ignore();
 
-        switch (choice) {
-            case 1:
-                currentUser = currentUser.registerUser();
-                Menu::userMenu(currentUser);
-                break;
-            case 2:
-                currentUser = currentUser.loginUser();
-                Menu::userMenu(currentUser);
-                break;
-            case 3:
-                // adminLogin
-                break;
-            case 4:
-                cout << "Exiting the program." << endl;
-                break;
-            default:
-                cout << "Invalid choice. Please try again." << endl;
-                break;
-        }
-    } while (choice != 4);
-}
+        if (choice == 1) {
+            User newUser = User().registerUser();
+            db.addUser(newUser);
 
-void Menu::userMenu(User& currentUser) {
-    int choice;
+        } else if (choice == 2) {
+            string uname, pass;
+            cout << "Enter username: ";
+            cin >> uname;
+            cout << "Enter password: ";
+            cin >> pass;
 
-    do {
-        cout << "== User Menu ==" << endl;
-        cout << "   1. View Balance" << endl;
-        cout << "   2. Send Money" << endl;
-        cout << "   3. View Transaction History" << endl;
-        cout << "   4. Edit Profile" << endl;
-        cout << "   5. Logout" << endl;
-        cout << "Enter your choice: ";
-        cin >> choice;
-        cin.ignore();
-
-        switch (choice) {
-            case 1:
-                cout << "Your balance is: " << currentUser.viewBalance() << endl;
-                break;
-            case 2: {
-                string recipient;
-                double amount;
-                cout << "Enter recipient username: ";
-                getline(cin, recipient);
-                cout << "Enter amount to send: ";
-                cin >> amount;
-                cin.ignore(); 
-
-                if (currentUser.sendMoney(recipient, amount)) {
-                    cout << "Money sent successfully!" << endl;
-                } else {
-                    cout << "Failed to send money." << endl;
-                }
-                break;
+            User user = db.getUser(uname);
+            if (user.username == uname && user.password == pass && !user.isSuspended) {
+                cout << "Welcome back, " << uname << "!\n";
+                userMenu(user);
+                db.updateUser(user);
+            } else {
+                cout << "Invalid login.\n";
             }
-            case 3:
-                currentUser.viewTransactionHistory();
-                break;
-            case 4:
-                currentUser.editProfile();
-                break;
-            case 5:
-                cout << "Logging out..." << endl;
-                break;
-            default:
-                cout << "Invalid choice. Please try again." << endl;
-                break;
+
+        } else if (choice == 3) {
+            Admin admin;
+            admin.loginAdmin();
+            adminMenu();
+
+        } else if (choice == 4) {
+            cout << "Goodbye!\n";
+            break;
+
+        } else {
+            cout << "Invalid choice.\n";
         }
-    } while (choice != 5);
+    }
 }
 
+void Menu::userMenu(User& user) {
+    int choice;
+    while (true) {
+        cout << "\n===== User Menu =====\n";
+        cout << "1. View Balance\n";
+        cout << "2. Send Money\n";
+        cout << "3. Request Money\n";
+        cout << "4. View Transaction History\n";
+        cout << "5. Edit Profile\n";
+        cout << "6. Logout\n";
+        cout << "Enter choice: ";
+        cin >> choice;
 
-void Menu::adminMenu(){
+        if (choice == 1) {
+            user.viewBalance();
 
+        } else if (choice == 2) {
+            string to;
+            double amount;
+            cout << "Enter recipient username: ";
+            cin >> to;
+            cout << "Enter amount: ";
+            cin >> amount;
 
+            if (user.sendMoney(to, amount)) {
+                db.updateUser(user);
+                db.addTransaction(Transaction(user.username, to, amount));
+            }
 
-};
+        } else if (choice == 3) {
+            string from;
+            double amount;
+            cout << "Enter username to request from: ";
+            cin >> from;
+            cout << "Enter amount: ";
+            cin >> amount;
 
+            user.requestMoney(from, amount);
+            db.updateUser(user);
+
+        } else if (choice == 4) {
+            user.viewTransactionHistory();
+
+        } else if (choice == 5) {
+            user.editProfile();
+            db.updateUser(user);
+
+        } else if (choice == 6) {
+            user.logoutUser();
+            break;
+
+        } else {
+            cout << "Invalid choice.\n";
+        }
+    }
+}
+
+void Menu::adminMenu() {
+    int choice;
+    while (true) {
+        cout << "\n===== Admin Menu =====\n";
+        cout << "1. View All Users\n";
+        cout << "2. Suspend User\n";
+        cout << "3. Reactivate User\n";
+        cout << "4. Adjust User Balance\n";
+        cout << "5. View All Transactions\n";
+        cout << "6. Logout\n";
+        cout << "Enter choice: ";
+        cin >> choice;
+
+        if (choice == 1) {
+            vector<User> users = db.loadUsers();
+            cout << "Registered Users:\n";
+            for (auto& u : users) {
+                cout << " - " << u.username 
+                     << " | Balance: " << u.balance
+                     << " | Suspended: " << (u.isSuspended ? "Yes" : "No") << endl;
+            }
+
+        } else if (choice == 2) {
+            string uname;
+            cout << "Enter username to suspend: ";
+            cin >> uname;
+            User u = db.getUser(uname);
+            if (!u.username.empty()) {
+                u.isSuspended = true;
+                db.updateUser(u);
+                cout << "User suspended.\n";
+            }
+
+        } else if (choice == 3) {
+            string uname;
+            cout << "Enter username to reactivate: ";
+            cin >> uname;
+            User u = db.getUser(uname);
+            if (!u.username.empty()) {
+                u.isSuspended = false;
+                db.updateUser(u);
+                cout << "User reactivated.\n";
+            }
+
+        } else if (choice == 4) {
+            string uname;
+            double amount;
+            cout << "Enter username: ";
+            cin >> uname;
+            cout << "Enter amount to adjust (+/-): ";
+            cin >> amount;
+
+            User u = db.getUser(uname);
+            if (!u.username.empty()) {
+                u.balance += amount;
+                db.updateUser(u);
+                cout << "Balance updated.\n";
+            }
+
+        } else if (choice == 5) {
+            vector<User> users = db.loadUsers();
+            for (auto& u : users) {
+                vector<Transaction> txs = db.loadTransactionsFor(u.username);
+                if (!txs.empty()) {
+                    cout << "\nTransactions for " << u.username << ":\n";
+                    for (auto& t : txs) {
+                        t.displayTransactionDetails();
+                    }
+                }
+            }
+
+        } else if (choice == 6) {
+            cout << "Admin logged out.\n";
+            break;
+
+        } else {
+            cout << "Invalid choice.\n";
+        }
+    }
+}

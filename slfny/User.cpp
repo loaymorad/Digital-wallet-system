@@ -1,181 +1,210 @@
 #include "User.h"
 #include "Database.h"
-#include "Transaction.h"
-#include "Menu.h"
-#include<string>
 #include <iostream>
-#include <iomanip> 
-
-/*
-    - don't forget to add error handling
-*/
-
-
-
+#include <stack>
+#include <queue>
 using namespace std;
 
-// =======================
-//          User
-// =======================
+static Database db;
 
-User::User() {
-    username = "";
-    password = "";
-    balance = 0.0;
-    transactions = {};
-    isSuspended = false; // Default to not suspended
+// ---------------------- Constructors ----------------------
+User::User() {}
+
+User::User(string username, string password) {
+    this->username = username;
+    this->password = password;
+    this->balance = 0.0;
+    this->isSuspended = false;
 }
 
-User::User(string name, string pass) {
-    username = name, password = pass;
-    balance = 500.0; // Register bonus signup get 500 pound for free "i made that doctor to test that we check for upper limit for transaction"
-    transactions = { };
-    isSuspended = false;
+User::User(string username, string password, double balance, bool isSuspended) {
+    this->username = username;
+    this->password = password;
+    this->balance = balance;
+    this->isSuspended = isSuspended;
 }
 
-User::User(string name, string pass, double bal, bool isSus) {
-    username = name, password = pass;
-    balance = bal;
-    transactions = { };
-    isSuspended = isSus;
-}
-
-// -------- Authentication -------- DONE
-
+// ---------------------- Authentication ----------------------
 User User::registerUser() {
-    string name, pass;
-    
-    cout << "Enter Username: ";
-    getline(cin, name);
-    cout << "Enter Password: ";
-    getline(cin, pass);
+    string uname, pass;
+    cout << "Enter username: ";
+    cin >> uname;
+    cout << "Enter password: ";
+    cin >> pass;
 
-    Database db;
-    while (true) {
-        User userFromDb = db.getUser(name); 
-        if (userFromDb.username != "") { // Exists
-            cout << "Sorry, this username is taken. Try another." << endl;
-            cout << "Enter Username: ";
-            getline(cin, name); // Prompt for a new username
-        } else {
-            User newUser = User(name, pass);
-            db.addUser(newUser); // Consider adding error handling here
-            return newUser;
-        }
+    User newUser(uname, pass, 0.0, false);
+    if (db.addUser(newUser)) {
+        cout << "User registered successfully!\n";
     }
+    return newUser;
 }
 
 User User::loginUser() {
-    string name, pass;
+    string uname, pass;
+    cout << "Enter username: ";
+    cin >> uname;
+    cout << "Enter password: ";
+    cin >> pass;
 
-    cout << "Enter Username: ";
-    getline(cin, name);
-    cout << "Enter Password: ";
-    getline(cin, pass);
-
-    Database db;
-    User userFromDb = db.getUser(name); 
-
-    if (userFromDb.username != "") {
-        if (userFromDb.password == pass) {
-            cout << "Logged in :)" << endl;
-            return userFromDb;
-        } else {
-            cout << "Username or password is wrong, please try again :(" << endl;
-            // Consider using a loop instead of recursion
-            return loginUser(); // This could be replaced with a loop
-        }
+    User dbUser = db.getUser(uname);
+    if (uname == dbUser.username && pass == dbUser.password && !dbUser.isSuspended) {
+        cout << "Login successful!\n";
+        return dbUser;
     } else {
-        cout << "You are not logged in, please register." << endl;
-        cout << "register Process" << endl;
-        return registerUser(); // This could also be replaced with a loop
+        cout << "Login failed. Invalid credentials or account suspended.\n";
+        return User();
     }
 }
 
 void User::logoutUser() {
-    Menu menu;
-    menu.mainMenu();
+    cout << "User " << username << " logged out.\n";
 }
 
-
-
-
-
-// -------- Features --------
-
-// DONE
+// ---------------------- Features ----------------------
 double User::viewBalance() {
+    cout << "Current balance: " << balance << endl;
     return balance;
 }
 
-// DONE
 bool User::sendMoney(const string& to, double amount) {
-    Database db;
-
-    // Check if receiver is in our db
-    User userFromDb = db.getUser(to); // Should return a User object
-
-    if (userFromDb.username != "") { // Check if user exists
-        // Check if my balance covers the amount
-        if (balance >= amount) {
-            balance -= amount;
-            Transaction transaction(username, to, amount); // Corrected instantiation
-
-            // Add to database logs
-            db.addTransaction(transaction);
-            return true; // Indicate success
-        } else {
-            cout << "You do not have enough balance to send this amount!" << endl;
-            cout << "Try a lower amount to send." << endl;
-            return false; // Indicate failure
-        }
-    } else {
-        cout << "Wrong receiver username." << endl;
-        return false; // Indicate failure
+    if (isSuspended) {
+        cout << "Account is suspended. Cannot send money.\n";
+        return false;
     }
+
+    if (amount > balance) {
+        cout << "Insufficient balance.\n";
+        return false;
+    }
+
+    // Deduct from sender
+    balance -= amount;
+    db.updateUser(*this);
+
+    // Record transaction
+    Transaction tx(username, to, amount);
+    transactions.push(tx);
+    db.addTransaction(tx);
+
+    cout << "Sent " << amount << " to " << to << ".\n";
+    return true;
 }
 
+bool User::requestMoney(const string& from, double amount) {
+    if (isSuspended) {
+        cout << "Account is suspended. Cannot request money.\n";
+        return false;
+    }
 
-bool User::requestMoney(const string& from, double amount) { // not Implemented YET
-    return false;
+    pendingRequests.push(Transaction(from, username, amount));
+    db.updateUser(*this);
+
+    cout << "Money request of " << amount << " sent to " << from << ".\n";
+    return true;
 }
 
-// DONE
 void User::viewTransactionHistory() {
-    if (transactions.empty()) {
-        cout << "No transactions found." << endl;
+    vector<Transaction> txs = db.loadTransactionsFor(username);
+    if (txs.empty()) {
+        cout << "No transactions found for " << username << ".\n";
         return;
     }
 
-    cout << "Transaction History for " << username << ":" << endl;
-    for (const auto& transaction : transactions) {
-        cout << "Sender: " << transaction.sender 
-             << ", Receiver: " << transaction.receiver 
-             << ", Amount: " << fixed << setprecision(2) << transaction.amount << endl;
+    cout << "Transaction History for " << username << ":\n";
+    for (auto& tx : txs) {
+        tx.displayTransactionDetails();
     }
 }
 
-// DONE
 void User::editProfile() {
-    string newUsername, newPassword;
-
-    cout << "Enter new username (leave blank to keep current): ";
-    getline(cin, newUsername);
-    cout << "Enter new password (leave blank to keep current): ";
-    getline(cin, newPassword);
-
-    if (!newUsername.empty()) {
-        username = newUsername;
-    }
-
-    if (!newPassword.empty()) {
-        password = newPassword;
-    }
-
-    Database db;
+    cout << "Editing profile for " << username << endl;
+    cout << "Enter new password: ";
+    string newPass;
+    cin >> newPass;
+    password = newPass;
     db.updateUser(*this);
-    cout << "Profile updated successfully." << endl;
+    cout << "Password updated successfully!\n";
 }
 
-User::~User() {
+// ---------------------- Destructor ----------------------
+User::~User() {}
+
+// ---------------------- Admin Methods ----------------------
+Admin::Admin() {}
+
+void Admin::loginAdmin() {
+    string pass;
+    cout << "Enter admin password: ";
+    cin >> pass;
+    if (pass == "admin123") {
+        cout << "Admin login successful!\n";
+    } else {
+        cout << "Wrong admin password!\n";
+    }
 }
+
+void Admin::viewAllUsers() {
+    vector<User> users = db.loadUsers();
+    cout << "All Users:\n";
+    for (auto& u : users) {
+        cout << " - " << u.username
+             << " | Balance: " << u.balance
+             << " | Suspended: " << (u.isSuspended ? "Yes" : "No") << endl;
+    }
+}
+
+void Admin::editUser(const string& uname) {
+    User u = db.getUser(uname);
+    if (u.username.empty()) {
+        cout << "User not found.\n";
+        return;
+    }
+    cout << "Enter new password: ";
+    string newPass;
+    cin >> newPass;
+    u.password = newPass;
+    db.updateUser(u);
+    cout << "User updated.\n";
+}
+
+void Admin::suspendUser(const string& uname) {
+    User u = db.getUser(uname);
+    if (!u.username.empty()) {
+        u.isSuspended = true;
+        db.updateUser(u);
+        cout << "User suspended: " << uname << endl;
+    }
+}
+
+void Admin::reactivateUser(const string& uname) {
+    User u = db.getUser(uname);
+    if (!u.username.empty()) {
+        u.isSuspended = false;
+        db.updateUser(u);
+        cout << "User reactivated: " << uname << endl;
+    }
+}
+
+void Admin::adjustBalance(const string& uname, double amount) {
+    User u = db.getUser(uname);
+    if (!u.username.empty()) {
+        u.balance += amount;
+        db.updateUser(u);
+        cout << "Balance adjusted for " << uname << endl;
+    }
+}
+
+void Admin::viewAllTransactions() {
+    vector<User> users = db.loadUsers();
+    for (auto& u : users) {
+        vector<Transaction> txs = db.loadTransactionsFor(u.username);
+        if (!txs.empty()) {
+            cout << "\nTransactions for " << u.username << ":\n";
+            for (auto& t : txs) {
+                t.displayTransactionDetails();
+            }
+        }
+    }
+}
+
+Admin::~Admin() {}

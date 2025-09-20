@@ -1,21 +1,26 @@
 #pragma once
 #include <iostream>
-#include <vector>
+#include <stack>
+#include <queue>
+#include <string>
 #include "Transaction.h"
+using namespace std;
 
 class User {
 public: 
     string username;
     string password;
     double balance = 0.0;
-    vector<Transaction> transactions;
+
+    stack<Transaction> transactions;  
+
+    queue<Transaction> pendingRequests;  
+
     bool isSuspended = false;
 
     User();
     User(string username, string password);
     User(string username, string password, double balance, bool isSuspended);
-    
-
 
     // Authentication
     User registerUser();
@@ -31,22 +36,16 @@ public:
     ~User();
 };
 
-
 class Admin : public User {
 public:
     Admin();
 
     void loginAdmin();
     void viewAllUsers();
-    
     void editUser(const string& username);
-    
     void suspendUser(const string& username);
-    
     void reactivateUser(const string& username);
-    
     void adjustBalance(const string& username, double amount);
-
     void viewAllTransactions();
 
     ~Admin();

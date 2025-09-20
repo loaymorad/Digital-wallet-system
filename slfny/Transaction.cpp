@@ -1,20 +1,27 @@
 #include "Transaction.h"
+#include "Database.h"
 #include <iostream>
-#include <iomanip> // For std::fixed and std::setprecision
+using namespace std;
 
-// Constructor
-Transaction::Transaction(string sender, string receiver, double amount) 
-    : sender(sender), receiver(receiver), amount(amount) {}
+static Database db;
 
-// Method to display transaction details
+Transaction::Transaction(string sender, string receiver, double amount) {
+    this->sender = sender;
+    this->receiver = receiver;
+    this->amount = amount;
+}
+
 void Transaction::displayTransactionDetails() {
-    std::cout << "Transaction Details: " << std::endl;
-    std::cout << "Sender: " << sender << std::endl;
-    std::cout << "Receiver: " << receiver << std::endl;
-    std::cout << "Amount: " << std::fixed << std::setprecision(2) << amount << std::endl;
+    cout << "Transaction Details:\n";
+    cout << "   Sender:   " << sender << endl;
+    cout << "   Receiver: " << receiver << endl;
+    cout << "   Amount:   " << amount << endl;
+    cout << "------------------------------------\n";
 }
 
-// Destructor
-Transaction::~Transaction() {
-    // No dynamic memory to free, but can be used for logging or cleanup if needed
+void Transaction::save() {
+    db.addTransaction(*this);
+    cout << "Transaction saved to database.\n";
 }
+
+Transaction::~Transaction() {}
